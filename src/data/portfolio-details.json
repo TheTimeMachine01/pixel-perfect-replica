@@ -1,0 +1,83 @@
+{
+  "name": "Ashish Verma",
+  "handle": "ashish@rhel-workstation",
+  "headline": "Linux systems. Built to run right.",
+  "role": "RHCSA Certified Linux & Cloud Administrator",
+  "intro": "Linux administration, cloud infrastructure, security hardening, and hands-on systems labs.",
+  "certification": "RHCSA · EX200",
+  "platforms": ["RHEL 9 / 10", "Arch Linux"],
+  "availability": "Available immediately for L1 Linux SysAdmin / Cloud Admin roles",
+  "uptime": "99.9%",
+  "contactHeading": "Let’s talk infrastructure.",
+  "contactIntro": "Interested in an L1 Linux or cloud administration role? Get in touch.",
+  "contact": {
+    "email": "",
+    "linkedin": "",
+    "github": "",
+    "resumePdf": ""
+  },
+  "security": [
+    {
+      "id": "selinux",
+      "title": "SELinux",
+      "value": "Enforcing",
+      "detail": "Mandatory access control with SELinux enforcing policies on Linux systems. Review policy context and audit logs when troubleshooting access."
+    },
+    {
+      "id": "ssh",
+      "title": "SSH access",
+      "value": "Key-only · Fail2ban",
+      "detail": "SSH key authentication with password login disabled, paired with Fail2ban to monitor authentication events and temporarily ban repeat offenders."
+    },
+    {
+      "id": "firewall",
+      "title": "Network perimeter",
+      "value": "Firewalld · Segmented",
+      "detail": "Host-based Firewalld rules and network segmentation to keep permitted services scoped to their intended zone."
+    },
+    {
+      "id": "kdump",
+      "title": "Crash recovery",
+      "value": "Kdump ready",
+      "detail": "Kdump reserves memory for a crash kernel and captures diagnostic dumps for post-incident analysis and recovery."
+    }
+  ],
+  "projects": [
+    {
+      "id": "rhel-kdump",
+      "title": "RHEL administration & Kdump",
+      "category": "SYSTEMS · RECOVERY",
+      "summary": "RHEL operations, SELinux troubleshooting, and crash recovery with Kdump.",
+      "detail": "A hands-on administration lab exploring service management with systemd, SELinux context investigation, and Kdump crash-dump configuration and analysis.",
+      "architecture": "RHEL host → SELinux & systemd operations → reserved Kdump memory → vmcore analysis",
+      "snippet": "# Inspect crash-recovery configuration\nsystemctl status kdump\ngrubby --info=ALL | grep crashkernel\n\n# Check recent kernel messages\njournalctl -k -b -1 --no-pager | tail -n 25"
+    },
+    {
+      "id": "podman-automount",
+      "title": "Rootless Podman & automounts",
+      "category": "CONTAINERS · SYSTEMD",
+      "summary": "Rootless containers alongside resilient systemd automount workflows.",
+      "detail": "An infrastructure lab combining rootless Podman units with on-demand systemd mount units, focusing on reliable startup and least-privilege operation.",
+      "architecture": "User session → systemd user unit → rootless Podman container → managed mount",
+      "snippet": "# Inspect user services and automounts\nsystemctl --user list-units --type=service\nsystemctl list-units --type=automount\n\n# Run a container without root\npodman info --format '{{.Host.Security.Rootless}}'"
+    },
+    {
+      "id": "lvm-backup",
+      "title": "LVM storage & backup pipeline",
+      "category": "STORAGE · RECOVERY",
+      "summary": "Logical volumes, snapshot-aware backups, and tested recovery paths.",
+      "detail": "A storage lab covering LVM volume layout and an automated backup workflow, with snapshots used to reason about consistent backups and restoration.",
+      "architecture": "Physical volumes → volume group → logical volume → backup & restore verification",
+      "snippet": "# Inspect logical-volume layout\npvs\nvgs\nlvs -a -o +devices\n\n# Check the latest backup timer runs\nsystemctl list-timers --all"
+    },
+    {
+      "id": "kvm-lab",
+      "title": "KVM / QEMU virtualization lab",
+      "category": "VIRTUALIZATION · LAB",
+      "summary": "A virtual test environment for repeatable Linux infrastructure experiments.",
+      "detail": "A KVM/QEMU virtualization lab for building isolated guests, trying configuration changes, and practicing Linux administration without touching production systems.",
+      "architecture": "KVM / QEMU host → isolated guest networks → RHEL & Arch Linux virtual machines",
+      "snippet": "# Discover virtualization support\nlsmod | grep -E '^kvm'\n\n# Review virtual-machine inventory\nvirsh list --all\nvirsh net-list --all"
+    }
+  ]
+}

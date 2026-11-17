@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Portfolio content
+- Keep editable personal copy, contact details, portfolio projects, and security-status content in `src/data/portfolio-details.json` so profile edits stay separate from presentation logic.
