@@ -5,7 +5,10 @@
   "role": "RHCSA Certified Linux & Cloud Administrator",
   "intro": "Linux administration, cloud infrastructure, security hardening, and hands-on systems labs.",
   "certification": "RHCSA · EX200",
-  "platforms": ["RHEL 9 / 10", "Arch Linux"],
+  "platforms": [
+    "RHEL 9 / 10",
+    "Arch Linux"
+  ],
   "availability": "Available immediately for L1 Linux SysAdmin / Cloud Admin roles",
   "uptime": "99.9%",
   "contactHeading": "Let’s talk infrastructure.",
@@ -21,25 +24,29 @@
       "id": "selinux",
       "title": "SELinux",
       "value": "Enforcing",
-      "detail": "Mandatory access control with SELinux enforcing policies on Linux systems. Review policy context and audit logs when troubleshooting access."
+      "detail": "Mandatory access control with SELinux enforcing policies on Linux systems. Review policy context and audit logs when troubleshooting access.",
+      "config": "# /etc/selinux/config\nSELINUX=enforcing\nSELINUXTYPE=targeted\n\n$ getenforce\nEnforcing\n$ semanage fcontext -a -t httpd_sys_content_t '/srv/web(/.*)?'\n$ restorecon -Rv /srv/web"
     },
     {
       "id": "ssh",
       "title": "SSH access",
       "value": "Key-only · Fail2ban",
-      "detail": "SSH key authentication with password login disabled, paired with Fail2ban to monitor authentication events and temporarily ban repeat offenders."
+      "detail": "SSH key authentication with password login disabled, paired with Fail2ban to monitor authentication events and temporarily ban repeat offenders.",
+      "config": "# /etc/ssh/sshd_config.d/10-hardening.conf\nPermitRootLogin no\nPasswordAuthentication no\nPubkeyAuthentication yes\nPubkeyAcceptedAlgorithms ssh-ed25519\nMaxAuthTries 3\n\n# /etc/fail2ban/jail.local\n[sshd]\nenabled = true\nmaxretry = 4\nbantime = 1h"
     },
     {
       "id": "firewall",
       "title": "Network perimeter",
       "value": "Firewalld · Segmented",
-      "detail": "Host-based Firewalld rules and network segmentation to keep permitted services scoped to their intended zone."
+      "detail": "Host-based Firewalld rules and network segmentation to keep permitted services scoped to their intended zone.",
+      "config": "$ firewall-cmd --get-active-zones\n$ firewall-cmd --permanent --zone=internal \\\n    --add-source=10.10.0.0/24\n$ firewall-cmd --permanent --zone=public \\\n    --remove-service=cockpit\n$ firewall-cmd --reload"
     },
     {
       "id": "kdump",
       "title": "Crash recovery",
       "value": "Kdump ready",
-      "detail": "Kdump reserves memory for a crash kernel and captures diagnostic dumps for post-incident analysis and recovery."
+      "detail": "Kdump reserves memory for a crash kernel and captures diagnostic dumps for post-incident analysis and recovery.",
+      "config": "# /etc/kdump.conf\npath /var/crash\ncore_collector makedumpfile -l --message-level 7 -d 31\n\n$ grubby --update-kernel=ALL --args=\"crashkernel=auto\"\n$ systemctl enable --now kdump\n$ kdumpctl status"
     }
   ],
   "projects": [
