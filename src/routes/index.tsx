@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Activity,
@@ -61,7 +61,7 @@ function Index() {
   const [terminalValue, setTerminalValue] = useState("");
   const [terminalLines, setTerminalLines] = useState<string[]>([
     "ashish@rhel-workstation:~$ help",
-    "Available: help · whoami · neofetch · ls labs · skills · contact · clear",
+    "Available: help · whoami · fastfetch · ls labs · cat security.txt · skills · contact · clear",
   ]);
 
   useEffect(() => {
@@ -90,8 +90,10 @@ function Index() {
 
   const commandResults = useMemo(
     () => ({
-      help: "Available: help · whoami · neofetch · ls labs · skills · contact · clear",
+      help: "Available: help · whoami · fastfetch · ls labs · cat security.txt · skills · contact · clear",
       whoami: `${details.name} — ${details.role}`,
+      fastfetch: `OS: ${details.platforms.join(" · ")}   Cert: ${details.certification}   Security: SELinux Enforcing   Uptime: ${details.uptime}`,
+      "cat security.txt": details.security.map((item) => `${item.title}: ${item.value}`).join("   "),
       neofetch: `OS: ${details.platforms.join(" · ")}   Cert: ${details.certification}   Uptime: ${details.uptime}`,
       "ls labs": details.projects.map((project) => project.id).join("  "),
       skills: "RHEL · systemd · SELinux · Podman · LVM · KVM/QEMU · Firewalld · Kdump",
@@ -139,119 +141,134 @@ function Index() {
 
   const resumeButton = (className = "") =>
     details.contact.resumePdf ? (
-      <Button asChild className={className}>
+      <Button asChild className={`rounded-full bg-sunset-gradient text-primary-foreground shadow-[0_8px_30px_-8px_var(--magenta)] hover:opacity-90 ${className}`}>
         <a href={details.contact.resumePdf} target="_blank" rel="noreferrer" download>
           <ArrowDownToLine /> Download CV
         </a>
       </Button>
     ) : (
-      <Button className={className} variant="outline" onClick={() => toast.info("Resume PDF hasn’t been added yet.")}>
+      <Button className={`rounded-full bg-sunset-gradient text-primary-foreground shadow-[0_8px_30px_-8px_var(--magenta)] hover:opacity-90 ${className}`} onClick={() => toast.info("Resume PDF hasn’t been added yet.")}>
         <ArrowDownToLine /> Download CV
       </Button>
     );
 
+  const spot = (event: ReactMouseEvent<HTMLElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    event.currentTarget.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+    event.currentTarget.style.setProperty("--my", `${event.clientY - rect.top}px`);
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="system-bar sticky top-0 z-40 flex h-10 items-center justify-between border-b border-border bg-top-bar px-3 text-xs text-foreground sm:px-6">
-        <a href="#home" className="flex min-w-0 items-center gap-2 font-medium" aria-label="Ashish Verma home">
-          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent-blue text-[10px] font-bold text-primary-foreground">A</span>
-          <span className="hidden sm:inline">ashish@rhel-workstation</span>
-          <span className="sm:hidden">ashish@rhel</span>
-        </a>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 px-3 font-medium text-foreground hover:bg-secondary">
-              {clock} <ChevronDown className="ml-1 size-3" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 border-border bg-card" align="center">
-            <div className="flex items-start gap-3">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-positive/15 text-positive"><Activity className="size-5" /></div>
-              <div>
-                <p className="font-semibold">Available for opportunities</p>
-                <p className="mt-1 text-sm text-muted-foreground">{details.availability}</p>
+    <div className="relative min-h-screen overflow-x-hidden bg-background text-foreground">
+      <div className="ambient" aria-hidden="true" />
+
+      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-6 sm:pt-4">
+        <div className="glass mx-auto flex h-12 max-w-7xl items-center justify-between rounded-full px-2 text-xs sm:px-3">
+          <a href="#home" className="flex min-w-0 items-center gap-2 font-medium" aria-label="Ashish Verma home">
+            <span className="flex h-7 items-center gap-1 rounded-full bg-sunset-gradient px-2.5 text-[10px] font-bold text-primary-foreground">
+              <span className="size-1.5 rounded-full bg-primary-foreground" /><span className="size-1.5 rounded-full bg-primary-foreground/50" /><span className="size-1.5 rounded-full bg-primary-foreground/50" />
+            </span>
+            <span className="hidden font-mono sm:inline">{details.handle}</span>
+            
+          </a>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 font-medium hover:bg-secondary">
+                <span className="glow-dot mr-1 size-1.5 rounded-full bg-positive" />{clock} <ChevronDown className="ml-1 size-3" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="glass w-80 rounded-2xl" align="center">
+              <div className="flex items-start gap-3">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-positive/15 text-positive"><Activity className="size-5" /></div>
+                <div>
+                  <p className="font-mono text-[10px] font-semibold tracking-widest text-positive">STATUS: AVAILABLE</p>
+                  <p className="mt-1 font-semibold">Open to Linux / Cloud Admin roles</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{details.availability}</p>
+                </div>
               </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 gap-2 px-2 text-foreground hover:bg-secondary" aria-label="Quick settings">
-              <Network className="size-4" /><Shield className="hidden size-4 sm:block" /><Power className="size-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 border-border bg-card" align="end">
-            <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
-              <div><p className="font-semibold">Quick settings</p><p className="text-xs text-muted-foreground">Personalize your view</p></div>
-              <Menu className="size-4 text-muted-foreground" />
-            </div>
-            <SettingRow icon={<Monitor />} label="Light appearance" checked={lightTheme} onCheckedChange={setLightTheme} />
-            <SettingRow icon={<UserRound />} label="Recruiter view" checked={recruiterView} onCheckedChange={setRecruiterView} />
-            <div className="mt-4 border-t border-border pt-4">{resumeButton("w-full")}</div>
-          </PopoverContent>
-        </Popover>
+            </PopoverContent>
+          </Popover>
+          <div className="flex items-center gap-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 gap-2 rounded-full px-3 hover:bg-secondary" aria-label="Quick settings">
+                  <Network className="size-4" /><Shield className="hidden size-4 sm:block" /><Power className="size-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="glass w-80 rounded-2xl" align="end">
+                <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+                  <div><p className="font-semibold">Quick settings</p><p className="text-xs text-muted-foreground">Personalize your view</p></div>
+                  <Menu className="size-4 text-muted-foreground" />
+                </div>
+                <SettingRow icon={<Monitor />} label="Light appearance" checked={lightTheme} onCheckedChange={setLightTheme} />
+                <SettingRow icon={<UserRound />} label="Recruiter view" checked={recruiterView} onCheckedChange={setRecruiterView} />
+                <div className="mt-4 border-t border-border pt-4">{resumeButton("w-full")}</div>
+              </PopoverContent>
+            </Popover>
+            <div className="hidden md:block">{resumeButton("h-8 px-4 text-xs")}</div>
+          </div>
+        </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-32 pt-8 sm:px-8 sm:pt-12">
-        <section id="home" className="scroll-mt-16">
-          <div className="mb-4 flex items-center justify-between text-xs text-muted-foreground">
-            <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-positive" /> WORKSTATION / HOME</span>
-            <span className="font-mono">SESSION 01 · RHCSA</span>
-          </div>
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-            <div className="flex h-11 items-center justify-between border-b border-border bg-window-header px-4">
-              <div className="flex items-center gap-2" aria-hidden="true">
-                <span className="size-2.5 rounded-full bg-destructive/80" /><span className="size-2.5 rounded-full bg-chart-4" /><span className="size-2.5 rounded-full bg-positive" />
-              </div>
-              <span className="font-mono text-xs text-muted-foreground">about — {details.handle}</span>
-              <span className="w-10" />
+      <main className="relative z-10 mx-auto w-full max-w-7xl px-4 pb-36 pt-12 sm:px-8 sm:pt-20">
+        <section id="home" className="reveal grid scroll-mt-24 items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+          <div>
+            <p className="gradient-border inline-flex items-center gap-2 rounded-full bg-glass px-4 py-1.5 font-mono text-[10px] font-semibold tracking-[0.2em] text-foreground sm:text-xs">
+              <span className="glow-dot size-1.5 rounded-full bg-positive" /> {details.certification} CERTIFIED • LINUX SYSTEMS
+            </p>
+            <h1 className="mt-6 text-5xl font-extrabold leading-[0.95] tracking-tight sm:text-6xl md:text-7xl">
+              Engineering <span className="text-sunset-gradient">Resilient Linux</span> Systems.
+            </h1>
+            <p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">{details.intro}</p>
+            {!recruiterView && <p className="mt-3 max-w-xl border-l-2 border-magenta pl-3 text-sm leading-6 text-muted-foreground">Hands-on labs across RHEL, Arch Linux, containers, storage, systemd, and virtualized test environments.</p>}
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button size="lg" onClick={showTerminal} className="rounded-full bg-sunset-gradient text-primary-foreground shadow-[0_10px_40px_-10px_var(--magenta)] hover:opacity-90"><TerminalIcon /> Launch interactive shell</Button>
+              <Button size="lg" asChild variant="outline" className="glass rounded-full hover:bg-secondary"><a href="#security"><Shield /> Inspect security posture</a></Button>
             </div>
-            <div className="grid gap-10 p-6 sm:p-10 lg:grid-cols-[1.2fr_0.8fr] lg:gap-12">
-              <div className="flex flex-col justify-center">
-                <p className="mb-4 flex items-center gap-2 text-sm font-medium text-positive"><span className="size-2 rounded-full bg-positive" /> {details.certification} CERTIFIED</p>
-                <h1 className="max-w-2xl text-4xl font-semibold leading-tight sm:text-5xl">{details.headline}</h1>
-                <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">{details.intro}</p>
-                {!recruiterView && <p className="mt-3 max-w-xl border-l-2 border-accent-blue pl-3 text-sm leading-6 text-muted-foreground">Hands-on labs across RHEL, Arch Linux, containers, storage, systemd, and virtualized test environments.</p>}
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <Button onClick={showTerminal}><TerminalIcon /> Open terminal</Button>
-                  {resumeButton("")}
-                </div>
-                <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-2"><Check className="size-4 text-positive" /> {details.role}</span>
-                  <span className="flex items-center gap-2"><Network className="size-4 text-accent-blue" /> {details.platforms.join(" · ")}</span>
-                </div>
-              </div>
-              <SystemSummary />
+            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <span className="flex items-center gap-2"><Check className="size-4 text-positive" /> {details.role}</span>
+              <span className="flex items-center gap-2"><Network className="size-4 text-neon" /> {details.platforms.join(" · ")}</span>
             </div>
           </div>
+          <SystemSummary />
         </section>
 
-        <section id="security" className="scroll-mt-16 pt-12 sm:pt-16">
-          <SectionHeading eyebrow="SYSTEM STATUS" title="Security & hardening" note="Configured with a defense-in-depth mindset." />
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section id="security" className="scroll-mt-24 pt-24">
+          <SectionHeading eyebrow="SYSTEM STATUS" title="Security & hardening" note="Configured with a defense-in-depth mindset. Select a tile to inspect its config." />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {details.security.map((item) => (
-              <Button key={item.id} variant="outline" onClick={() => setSelectedSecurity(item)} className="h-auto min-h-24 justify-start whitespace-normal rounded-lg border-border bg-card p-4 text-left shadow-none hover:border-positive/50 hover:bg-secondary">
-                <div className="flex w-full items-start gap-3">
-                  <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-positive/10 text-positive"><Shield className="size-4" /></span>
-                  <span className="min-w-0"><span className="block text-xs text-muted-foreground">{item.title}</span><span className="mt-1 block text-sm font-semibold text-foreground">{item.value}</span></span>
+              <button key={item.id} type="button" onMouseMove={spot} onClick={() => setSelectedSecurity(item)} className="glass glass-hover spotlight group relative overflow-hidden rounded-2xl p-5 text-left">
+                <span className="absolute inset-x-6 top-0 h-px bg-sunset-gradient opacity-70" />
+                <div className="flex items-center justify-between">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-positive/10 text-positive"><Shield className="size-5" /></span>
+                  <span className="glow-dot size-2 rounded-full bg-positive" />
                 </div>
-              </Button>
+                <p className="mt-5 font-mono text-[10px] tracking-widest text-muted-foreground">{item.title.toUpperCase()}</p>
+                <p className="mt-1 text-lg font-bold">{item.value}</p>
+                <p className="mt-3 text-xs text-muted-foreground transition-colors group-hover:text-foreground">View config →</p>
+              </button>
             ))}
           </div>
         </section>
 
-        <section id="labs" className="scroll-mt-16 pt-12 sm:pt-16">
+        <section id="labs" className="scroll-mt-24 pt-24">
           <SectionHeading eyebrow="HANDS-ON WORK" title="Infrastructure labs" note="Practical systems work, documented from design through operations." />
-          <div className="grid gap-4 md:grid-cols-2">
-            {details.projects.map((project, index) => <ProjectWindow key={project.id} project={project} index={index} onCopy={copyText} />)}
+          <div className="grid gap-4 md:grid-cols-6">
+            {details.projects.map((project, index) => (
+              <div key={project.id} className={index === 0 || index === 3 ? "md:col-span-4" : "md:col-span-2"}>
+                <ProjectWindow project={project} index={index} onCopy={copyText} onSpot={spot} />
+              </div>
+            ))}
           </div>
         </section>
 
-        <section id="contact" className="scroll-mt-16 pb-8 pt-12 sm:pt-16">
-          <SectionHeading eyebrow="CONTACT" title={details.contactHeading} note={details.contactIntro} />
-          <div className="grid gap-8 border-y border-border py-7 md:grid-cols-[1fr_1fr] md:items-center">
-            <p className="max-w-md text-sm leading-6 text-muted-foreground">Open to starting a conversation about Linux systems and cloud administration opportunities.</p>
-            <div className="grid gap-2 sm:grid-cols-3">
+        <section id="contact" className="scroll-mt-24 pt-24">
+          <div className="glass gradient-border relative overflow-hidden rounded-3xl p-8 sm:p-12">
+            <div className="pointer-events-none absolute -right-20 -top-20 size-72 rounded-full bg-magenta/20 blur-3xl" />
+            <p className="font-mono text-xs font-semibold tracking-[0.2em] text-neon">CONTACT</p>
+            <h2 className="mt-3 max-w-2xl text-4xl font-extrabold tracking-tight sm:text-5xl">{details.contactHeading}</h2>
+            <p className="mt-4 max-w-xl text-muted-foreground">{details.contactIntro}</p>
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <ContactAction label="Email" value={details.contact.email} icon={<Mail />} onCopy={copyText} />
               <ContactAction label="LinkedIn" value={details.contact.linkedin} icon={<UserRound />} onCopy={copyText} />
               <ContactAction label="GitHub" value={details.contact.github} icon={<Code2 />} onCopy={copyText} />
@@ -260,37 +277,46 @@ function Index() {
         </section>
       </main>
 
-      <nav aria-label="Portfolio sections" className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-border bg-card/95 p-1.5 shadow-lg backdrop-blur">
+      <nav aria-label="Portfolio sections" className="glass fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-end gap-1 rounded-2xl p-2 shadow-[0_20px_50px_oklch(0_0_0/0.7)]">
         <DockButton label="Home" href="#home" icon={<House />} />
         <DockButton label="Labs" href="#labs" icon={<Layers3 />} />
         <DockButton label="Security" href="#security" icon={<Shield />} />
-        <Button variant="ghost" size="icon" className="size-10 rounded-lg" aria-label="Terminal" title="Terminal" onClick={showTerminal}><TerminalIcon /></Button>
+        <Button size="icon" className="size-11 rounded-xl bg-sunset-gradient text-primary-foreground transition-transform duration-300 hover:-translate-y-1.5 hover:scale-125" aria-label="Terminal" title="Terminal" onClick={showTerminal}><TerminalIcon /></Button>
         <DockButton label="Contact" href="#contact" icon={<Mail />} />
       </nav>
 
       {terminalOpen && (
-        <aside className="fixed inset-x-3 bottom-20 z-50 mx-auto max-w-3xl overflow-hidden rounded-xl border border-border bg-card shadow-2xl sm:inset-x-6" aria-label="Interactive terminal">
+        <aside className="glass drawer-up fixed inset-x-3 bottom-24 z-50 mx-auto max-w-3xl overflow-hidden rounded-2xl sm:inset-x-6" aria-label="Interactive terminal">
           <div className="flex items-center justify-between border-b border-border bg-window-header px-4 py-3">
             <span className="flex items-center gap-2 font-mono text-xs"><TerminalIcon className="size-4 text-positive" /> ashish@rhel-workstation:~</span>
-            <Button variant="ghost" size="icon" className="size-8" aria-label="Close terminal" onClick={() => setTerminalOpen(false)}><X /></Button>
+            <Button variant="ghost" size="icon" className="size-8 rounded-full" aria-label="Close terminal" onClick={() => setTerminalOpen(false)}><X /></Button>
           </div>
-          <div className="max-h-56 overflow-y-auto p-4 font-mono text-xs leading-6 sm:text-sm" aria-live="polite">
+          <div className="max-h-64 overflow-y-auto p-4 font-mono text-xs leading-6 sm:text-sm" aria-live="polite">
             {terminalLines.map((line, index) => <p key={`${index}-${line}`} className={line.startsWith("ashish@") ? "text-positive" : "text-muted-foreground"}>{line}</p>)}
             <form onSubmit={runCommand} className="mt-2 flex items-center gap-2">
-              <span className="shrink-0 text-positive">ashish@rhel-workstation:~$</span>
-              <Input id="terminal-input" autoComplete="off" spellCheck={false} aria-label="Terminal command" value={terminalValue} onChange={(event) => setTerminalValue(event.target.value)} className="h-7 border-0 bg-transparent px-0 font-mono text-sm shadow-none focus-visible:ring-0" />
+              <span className="shrink-0 text-magenta">ashish@rhel-workstation:~$</span>
+              <Input id="terminal-input" autoComplete="off" spellCheck={false} aria-label="Terminal command" value={terminalValue} onChange={(event) => setTerminalValue(event.target.value)} className="h-7 border-0 bg-transparent px-0 font-mono text-sm shadow-none focus-visible:ring-0 dark:bg-transparent" />
             </form>
           </div>
         </aside>
       )}
 
       <Dialog open={selectedSecurity !== null} onOpenChange={(open) => !open && setSelectedSecurity(null)}>
-        <DialogContent className="border-border bg-card sm:max-w-lg">
+        <DialogContent className="glass rounded-2xl sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"> <Shield className="size-5 text-positive" /> {selectedSecurity?.title}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Shield className="size-5 text-positive" /> {selectedSecurity?.title}</DialogTitle>
             <DialogDescription>{selectedSecurity?.value}</DialogDescription>
           </DialogHeader>
           <p className="text-sm leading-6 text-muted-foreground">{selectedSecurity?.detail}</p>
+          {selectedSecurity?.config && (
+            <div className="overflow-hidden rounded-xl border border-border bg-background/60">
+              <div className="flex items-center justify-between border-b border-border px-3 py-2">
+                <span className="font-mono text-[10px] tracking-widest text-muted-foreground">CONFIG</span>
+                <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => copyText(selectedSecurity.config, "Config")}><Clipboard /> Copy</Button>
+              </div>
+              <pre className="max-h-64 overflow-auto p-3 font-mono text-xs leading-5"><code>{selectedSecurity.config.split("\n").map((line, i) => <span key={i} className={`block ${line.startsWith("#") ? "text-muted-foreground" : line.startsWith("$") ? "text-positive" : "text-foreground"}`}>{line || " "}</span>)}</code></pre>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
@@ -303,40 +329,68 @@ function SettingRow({ icon, label, checked, onCheckedChange }: { icon: ReactNode
 
 function SystemSummary() {
   const rows = [
-    { label: "OS", value: details.platforms.join(" / "), icon: <Monitor /> },
-    { label: "Certification", value: details.certification, icon: <Shield /> },
-    { label: "Uptime", value: details.uptime, icon: <Activity /> },
-    { label: "Security", value: details.security[0]?.value ?? "Configured", icon: <Check /> },
+    { label: "OS", value: details.platforms.join(" / ") },
+    { label: "Kernel", value: "6.x · hardened" },
+    { label: "Cert", value: details.certification },
+    { label: "Security", value: "SELinux Enforcing" },
+    { label: "Init", value: "systemd" },
+    { label: "Uptime", value: details.uptime },
   ];
-  return <div className="overflow-hidden rounded-lg border border-border bg-background">
-    <div className="flex items-center justify-between border-b border-border bg-window-header px-4 py-3"><span className="font-mono text-xs text-muted-foreground">SYSTEM SUMMARY</span><span className="size-2 rounded-full bg-positive" /></div>
-    <div className="p-4 sm:p-5">
-      <div className="mb-5 flex items-center gap-3"><div className="flex size-11 items-center justify-center rounded-lg bg-accent-blue/15 text-accent-blue"><Cpu className="size-6" /></div><div><p className="font-semibold">{details.handle}</p><p className="text-xs text-muted-foreground">Linux workstation</p></div></div>
-      <div className="space-y-3">{rows.map((row) => <div key={row.label} className="grid grid-cols-[24px_88px_1fr] items-center gap-2 text-sm"><span className="text-muted-foreground">{row.icon}</span><span className="text-muted-foreground">{row.label}</span><span className="font-medium">{row.value}</span></div>)}</div>
-      <div className="mt-5 flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground"><HardDrive className="size-4" /> Systems-focused · security-minded · operations-ready</div>
+  const logo = ["   ▄▄████▄▄   ", " ▄██▀▀▀▀▀▀██▄ ", "███  ▄▄▄▄  ███", "███  ████  ███", " ▀██▄▄▄▄▄▄██▀ ", "   ▀▀████▀▀   "];
+  return <div className="reveal relative [perspective:1200px]">
+    <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-sunset-gradient opacity-25 blur-3xl" />
+    <div className="glass gradient-border relative overflow-hidden rounded-[20px] transition-transform duration-700 lg:[transform:rotateY(-8deg)_rotateX(4deg)] lg:hover:[transform:none]">
+      <div className="flex items-center justify-between border-b border-border bg-window-header px-4 py-3">
+        <div className="flex gap-1.5" aria-hidden="true"><span className="size-3 rounded-full bg-magenta" /><span className="size-3 rounded-full bg-sunset" /><span className="size-3 rounded-full bg-positive" /></div>
+        <span className="font-mono text-xs text-muted-foreground">~ fastfetch</span>
+        <span className="w-12" />
+      </div>
+      <div className="grid gap-5 p-5 font-mono text-xs sm:grid-cols-[auto_1fr] sm:p-6 sm:text-sm">
+        <pre className="text-sunset-gradient hidden leading-tight sm:block" aria-hidden="true">{logo.join("\n")}</pre>
+        <div>
+          <p className="font-semibold"><span className="text-magenta">ashish</span>@<span className="text-neon">rhel-workstation</span></p>
+          <p className="text-muted-foreground">------------------------</p>
+          {rows.map((row) => <p key={row.label} className="leading-6"><span className="text-sunset">{row.label}</span>: <span className="text-foreground">{row.value}</span></p>)}
+          <div className="mt-3 flex gap-1" aria-hidden="true">{["bg-magenta", "bg-sunset", "bg-chart-4", "bg-positive", "bg-neon", "bg-violet"].map((c) => <span key={c} className={`h-3 w-5 rounded-sm ${c}`} />)}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 border-t border-border px-5 py-3 text-xs text-muted-foreground"><HardDrive className="size-4" /> Systems-focused · security-minded · operations-ready</div>
     </div>
   </div>;
 }
 
 function SectionHeading({ eyebrow, title, note }: { eyebrow: string; title: string; note: string }) {
-  return <div className="mb-5 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-end sm:justify-between"><div><p className="mb-2 text-xs font-semibold text-accent-blue">{eyebrow}</p><h2 className="text-2xl font-semibold sm:text-3xl">{title}</h2></div><p className="max-w-lg text-sm leading-6 text-muted-foreground sm:text-right">{note}</p></div>;
+  return <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><p className="mb-3 font-mono text-xs font-semibold tracking-[0.2em] text-neon">{eyebrow}</p><h2 className="text-4xl font-extrabold tracking-tight sm:text-5xl">{title}</h2></div><p className="max-w-md text-sm leading-6 text-muted-foreground sm:text-right">{note}</p></div>;
 }
 
-function ProjectWindow({ project, index, onCopy }: { project: Project; index: number; onCopy: (value: string, label: string) => void }) {
+function ProjectWindow({ project, index, onCopy, onSpot }: { project: Project; index: number; onCopy: (value: string, label: string) => void; onSpot: (event: ReactMouseEvent<HTMLElement>) => void }) {
   const [showSnippet, setShowSnippet] = useState(false);
-  return <article className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-    <div className="flex min-h-11 items-center justify-between gap-2 border-b border-border bg-window-header px-4 py-2"><div className="flex min-w-0 items-center gap-2"><span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-accent-blue/15 text-accent-blue">{index === 0 ? <Activity /> : index === 1 ? <Cpu /> : index === 2 ? <HardDrive /> : <Layers3 />}</span><span className="truncate font-medium">{project.title}</span></div><span className="hidden shrink-0 font-mono text-[10px] text-muted-foreground sm:block">LAB {String(index + 1).padStart(2, "0")}</span></div>
-    <div className="p-4 sm:p-5"><p className="text-[10px] font-semibold text-accent-blue">{project.category}</p><p className="mt-2 min-h-12 text-sm leading-6 text-muted-foreground">{project.summary}</p>
-      <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-3"><div className="flex items-center gap-2 text-xs"><span className={showSnippet ? "text-muted-foreground" : "font-medium"}>Overview</span><Switch checked={showSnippet} onCheckedChange={setShowSnippet} aria-label={`${project.title} show CLI snippet`} /><span className={showSnippet ? "font-medium" : "text-muted-foreground"}>CLI</span></div>{showSnippet && <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => onCopy(project.snippet, "CLI snippet")}><Clipboard /> Copy</Button>}</div>
-      {showSnippet ? <pre className="mt-3 max-h-44 overflow-auto rounded-md border border-border bg-background p-3 font-mono text-xs leading-5 text-muted-foreground"><code>{project.snippet}</code></pre> : <div className="mt-3 rounded-md bg-secondary/60 p-3"><p className="mb-1 text-[10px] font-semibold text-muted-foreground">ARCHITECTURE</p><p className="text-xs leading-5 text-foreground">{project.architecture}</p><p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">{project.detail}</p></div>}
+  return <article onMouseMove={onSpot} className="glass glass-hover spotlight relative flex h-full flex-col overflow-hidden rounded-3xl p-6">
+    <div className="flex items-center justify-between gap-2">
+      <span className="flex size-10 items-center justify-center rounded-xl bg-sunset-gradient text-primary-foreground">{index === 0 ? <Activity className="size-5" /> : index === 1 ? <Cpu className="size-5" /> : index === 2 ? <HardDrive className="size-5" /> : <Layers3 className="size-5" />}</span>
+      <span className="font-mono text-[10px] tracking-widest text-muted-foreground">LAB {String(index + 1).padStart(2, "0")}</span>
+    </div>
+    <p className="mt-5 font-mono text-[10px] font-semibold tracking-widest text-neon">{project.category}</p>
+    <h3 className="mt-1 text-xl font-bold tracking-tight">{project.title}</h3>
+    <p className="mt-2 text-sm leading-6 text-muted-foreground">{project.summary}</p>
+    <div className="mt-5 flex items-center justify-between gap-2">
+      <div role="tablist" className="flex rounded-full border border-border bg-background/40 p-1 text-xs">
+        <button type="button" role="tab" aria-selected={!showSnippet} onClick={() => setShowSnippet(false)} className={`rounded-full px-3 py-1.5 transition-all ${!showSnippet ? "bg-sunset-gradient font-semibold text-primary-foreground" : "text-muted-foreground"}`}>Architecture</button>
+        <button type="button" role="tab" aria-selected={showSnippet} aria-label={`${project.title} show CLI snippet`} onClick={() => setShowSnippet(true)} className={`rounded-full px-3 py-1.5 transition-all ${showSnippet ? "bg-sunset-gradient font-semibold text-primary-foreground" : "text-muted-foreground"}`}>CLI & Config</button>
+      </div>
+      {showSnippet && <Button variant="ghost" size="sm" className="h-8 rounded-full px-3" onClick={() => onCopy(project.snippet, "CLI snippet")}><Clipboard /> Copy</Button>}
+    </div>
+    <div className="mt-4 flex-1">
+      {showSnippet ? <pre className="max-h-48 overflow-auto rounded-2xl border border-border bg-background/60 p-4 font-mono text-xs leading-5"><code>{project.snippet.split("\n").map((line, i) => <span key={i} className={`block ${line.startsWith("#") ? "text-muted-foreground" : "text-positive"}`}>{line || " "}</span>)}</code></pre>
+        : <div className="rounded-2xl border border-border bg-background/30 p-4"><p className="mb-1 font-mono text-[10px] font-semibold tracking-widest text-muted-foreground">ARCHITECTURE</p><p className="text-sm leading-6">{project.architecture}</p><p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">{project.detail}</p></div>}
     </div>
   </article>;
 }
 
 function ContactAction({ label, value, icon, onCopy }: { label: string; value: string; icon: ReactNode; onCopy: (value: string, label: string) => void }) {
-  return <Button variant="outline" onClick={() => onCopy(value, label)} className="h-auto min-h-10 justify-start gap-2 rounded-md px-3 text-xs"><span className="text-accent-blue">{icon}</span><span className="truncate">{value || `Add ${label}`}</span><Clipboard className="ml-auto size-3 shrink-0 text-muted-foreground" /></Button>;
+  return <Button variant="outline" onClick={() => onCopy(value, label)} className="glass glass-hover h-auto min-h-12 justify-start gap-3 rounded-2xl px-4 text-sm"><span className="text-magenta">{icon}</span><span className="truncate">{value || `Add ${label}`}</span><Clipboard className="ml-auto size-3.5 shrink-0 text-muted-foreground" /></Button>;
 }
 
 function DockButton({ label, href, icon }: { label: string; href: string; icon: ReactNode }) {
-  return <Button asChild variant="ghost" size="icon" className="size-10 rounded-lg" title={label} aria-label={label}><a href={href}>{icon}</a></Button>;
+  return <Button asChild variant="ghost" size="icon" className="size-11 rounded-xl transition-transform duration-300 hover:-translate-y-1.5 hover:scale-125 hover:bg-secondary" title={label} aria-label={label}><a href={href}>{icon}</a></Button>;
 }
