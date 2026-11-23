@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Activity,
@@ -59,6 +59,7 @@ function Index() {
   const [selectedSecurity, setSelectedSecurity] = useState<SecurityItem | null>(null);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [terminalValue, setTerminalValue] = useState("");
+  const [activeSection, setActiveSection] = useState("home");
   const [terminalLines, setTerminalLines] = useState<string[]>([
     "ashish@rhel-workstation:~$ help",
     "Available: help · whoami · fastfetch · ls labs · cat security.txt · skills · contact · clear",
@@ -88,6 +89,42 @@ function Index() {
     };
   }, [lightTheme]);
 
+  useRevealOnScroll();
+
+  useEffect(() => {
+    const sectionIds = ["home", "security", "labs", "contact"];
+    const sections = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter((section): section is HTMLElement => section !== null);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        const nextSection = visible[0]?.target.id;
+        if (nextSection) setActiveSection(nextSection);
+      },
+      { rootMargin: "-35% 0px -55% 0px", threshold: 0 },
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.code === "Backquote") {
+        event.preventDefault();
+        setTerminalOpen((open) => !open);
+        window.setTimeout(() => {
+          if (document.querySelector(".terminal-drawer.is-open")) document.getElementById("terminal-input")?.focus();
+        }, 100);
+      }
+      if (event.key === "Escape") setTerminalOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const commandResults = useMemo(
     () => ({
       help: "Available: help · whoami · fastfetch · ls labs · cat security.txt · skills · contact · clear",
@@ -106,12 +143,11 @@ function Index() {
 
   const showTerminal = () => {
     setTerminalOpen(true);
-    window.setTimeout(() => document.getElementById("terminal-input")?.focus(), 80);
+    window.setTimeout(() => document.getElementById("terminal-input")?.focus(), 100);
   };
 
-  const runCommand = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const command = terminalValue.trim().toLowerCase();
+  const executeCommand = (rawCommand: string) => {
+    const command = rawCommand.trim().toLowerCase();
     if (!command) return;
     if (command === "clear") {
       setTerminalLines([]);
@@ -119,11 +155,16 @@ function Index() {
       const result = commandResults[command as keyof typeof commandResults];
       setTerminalLines((lines) => [
         ...lines,
-        `ashish@rhel-workstation:~$ ${terminalValue.trim()}`,
+        `ashish@rhel-workstation:~$ ${rawCommand.trim()}`,
         result ?? `bash: ${command}: command not found — try help`,
       ]);
     }
     setTerminalValue("");
+  };
+
+  const runCommand = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    executeCommand(terminalValue);
   };
 
   const copyText = async (value: string, label: string) => {
@@ -165,8 +206,10 @@ function Index() {
       <header className="sticky top-0 z-40 px-3 pt-3 sm:px-6 sm:pt-4">
         <div className="glass mx-auto flex h-12 max-w-7xl items-center justify-between rounded-full px-2 text-xs sm:px-3">
           <a href="#home" className="flex min-w-0 items-center gap-2 font-medium" aria-label="Ashish Verma home">
-            <span className="flex h-7 items-center gap-1 rounded-full bg-sunset-gradient px-2.5 text-[10px] font-bold text-primary-foreground">
-              <span className="size-1.5 rounded-full bg-primary-foreground" /><span className="size-1.5 rounded-full bg-primary-foreground/50" /><span className="size-1.5 rounded-full bg-primary-foreground/50" />
+            <span className="flex h-7 items-center gap-1 rounded-full bg-sunset-gradient px-2.5 text-[10px] font-bold text-primary-foreground" aria-label={`Current section: ${activeSection}`}>
+              {["home", "security", "labs", "contact"].map((section) => (
+                <span key={section} className={`h-1.5 rounded-full bg-primary-foreground transition-[width,opacity] duration-500 ease-out ${activeSection === section ? "w-[18px] opacity-100" : "w-1.5 opacity-50"}`} />
+              ))}
             </span>
             <span className="hidden font-mono sm:inline">{details.handle}</span>
             
@@ -233,11 +276,11 @@ function Index() {
           <SystemSummary />
         </section>
 
-        <section id="security" className="scroll-mt-24 pt-24">
+        <section id="security" data-reveal="security" className="scroll-mt-24 pt-24">
           <SectionHeading eyebrow="SYSTEM STATUS" title="Security & hardening" note="Configured with a defense-in-depth mindset. Select a tile to inspect its config." />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {details.security.map((item) => (
-              <button key={item.id} type="button" onMouseMove={spot} onClick={() => setSelectedSecurity(item)} className="glass glass-hover spotlight group relative overflow-hidden rounded-2xl p-5 text-left">
+              <button key={item.id} type="button" onMouseMove={spot} onClick={() => setSelectedSecurity(item)} className="reveal-item glass glass-hover spotlight group relative overflow-hidden rounded-2xl p-5 text-left">
                 <span className="absolute inset-x-6 top-0 h-px bg-sunset-gradient opacity-70" />
                 <div className="flex items-center justify-between">
                   <span className="flex size-10 items-center justify-center rounded-xl bg-positive/10 text-positive"><Shield className="size-5" /></span>
@@ -251,11 +294,11 @@ function Index() {
           </div>
         </section>
 
-        <section id="labs" className="scroll-mt-24 pt-24">
+        <section id="labs" data-reveal="labs" className="scroll-mt-24 pt-24">
           <SectionHeading eyebrow="HANDS-ON WORK" title="Infrastructure labs" note="Practical systems work, documented from design through operations." />
           <div className="grid gap-4 md:grid-cols-6">
             {details.projects.map((project, index) => (
-              <div key={project.id} className={index === 0 || index === 3 ? "md:col-span-4" : "md:col-span-2"}>
+              <div key={project.id} className={`reveal-item ${index === 0 || index === 3 ? "md:col-span-4" : "md:col-span-2"}`}>
                 <ProjectWindow project={project} index={index} onCopy={copyText} onSpot={spot} />
               </div>
             ))}
@@ -263,7 +306,7 @@ function Index() {
         </section>
 
         <section id="contact" className="scroll-mt-24 pt-24">
-          <div className="glass gradient-border relative overflow-hidden rounded-3xl p-8 sm:p-12">
+          <div data-reveal="contact" className="reveal-item glass gradient-border relative overflow-hidden rounded-3xl p-8 sm:p-12">
             <div className="pointer-events-none absolute -right-20 -top-20 size-72 rounded-full bg-magenta/20 blur-3xl" />
             <p className="font-mono text-xs font-semibold tracking-[0.2em] text-neon">CONTACT</p>
             <h2 className="mt-3 max-w-2xl text-4xl font-extrabold tracking-tight sm:text-5xl">{details.contactHeading}</h2>
@@ -278,28 +321,33 @@ function Index() {
       </main>
 
       <nav aria-label="Portfolio sections" className="glass fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-end gap-1 rounded-2xl p-2 shadow-[0_20px_50px_oklch(0_0_0/0.7)]">
-        <DockButton label="Home" href="#home" icon={<House />} />
-        <DockButton label="Labs" href="#labs" icon={<Layers3 />} />
-        <DockButton label="Security" href="#security" icon={<Shield />} />
-        <Button size="icon" className="size-11 rounded-xl bg-sunset-gradient text-primary-foreground transition-transform duration-300 hover:-translate-y-1.5 hover:scale-125" aria-label="Terminal" title="Terminal" onClick={showTerminal}><TerminalIcon /></Button>
-        <DockButton label="Contact" href="#contact" icon={<Mail />} />
+        <DockButton label="Home" href="#home" icon={<House />} active={activeSection === "home"} />
+        <DockButton label="Labs" href="#labs" icon={<Layers3 />} active={activeSection === "labs"} />
+        <DockButton label="Security" href="#security" icon={<Shield />} active={activeSection === "security"} />
+        <DockButton label="Terminal" icon={<TerminalIcon />} onClick={showTerminal} />
+        <DockButton label="Contact" href="#contact" icon={<Mail />} active={activeSection === "contact"} />
       </nav>
 
-      {terminalOpen && (
-        <aside className="glass drawer-up fixed inset-x-3 bottom-24 z-50 mx-auto max-w-3xl overflow-hidden rounded-2xl sm:inset-x-6" aria-label="Interactive terminal">
-          <div className="flex items-center justify-between border-b border-border bg-window-header px-4 py-3">
+      <aside aria-label="Interactive terminal" aria-hidden={!terminalOpen} inert={!terminalOpen} className={`terminal-drawer glass fixed inset-x-3 bottom-24 z-50 mx-auto max-w-3xl overflow-hidden rounded-2xl transition-[opacity,transform] duration-300 [transition-timing-function:cubic-bezier(0.2,0.9,0.3,1.1)] sm:inset-x-6 ${terminalOpen ? "is-open translate-y-0 scale-100 opacity-100" : "translate-y-6 scale-[0.98] opacity-0"}`}>
+        <div className="flex flex-col gap-3 border-b border-border bg-window-header px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2 font-mono text-xs"><TerminalIcon className="size-4 text-positive" /> ashish@rhel-workstation:~</span>
-            <Button variant="ghost" size="icon" className="size-8 rounded-full" aria-label="Close terminal" onClick={() => setTerminalOpen(false)}><X /></Button>
+            <Button variant="ghost" size="icon" className="size-8 shrink-0 rounded-full" aria-label="Close terminal" onClick={() => setTerminalOpen(false)}><X /></Button>
           </div>
-          <div className="max-h-64 overflow-y-auto p-4 font-mono text-xs leading-6 sm:text-sm" aria-live="polite">
+          <div className="flex flex-wrap gap-1.5" aria-label="Suggested terminal commands">
+            {["fastfetch", "ls labs", "cat security.txt", "skills"].map((command) => (
+              <Button key={command} type="button" variant="outline" size="sm" className="h-7 rounded-full px-2.5 font-mono text-[10px]" onClick={() => executeCommand(command)}>{command}</Button>
+            ))}
+          </div>
+        </div>
+        <div className="thin-scrollbar max-h-64 overflow-y-auto p-4 font-mono text-xs leading-6 sm:text-sm" aria-live="polite">
             {terminalLines.map((line, index) => <p key={`${index}-${line}`} className={line.startsWith("ashish@") ? "text-positive" : "text-muted-foreground"}>{line}</p>)}
             <form onSubmit={runCommand} className="mt-2 flex items-center gap-2">
               <span className="shrink-0 text-magenta">ashish@rhel-workstation:~$</span>
               <Input id="terminal-input" autoComplete="off" spellCheck={false} aria-label="Terminal command" value={terminalValue} onChange={(event) => setTerminalValue(event.target.value)} className="h-7 border-0 bg-transparent px-0 font-mono text-sm shadow-none focus-visible:ring-0 dark:bg-transparent" />
             </form>
-          </div>
-        </aside>
-      )}
+        </div>
+      </aside>
 
       <Dialog open={selectedSecurity !== null} onOpenChange={(open) => !open && setSelectedSecurity(null)}>
         <DialogContent className="glass rounded-2xl sm:max-w-xl">
@@ -314,13 +362,35 @@ function Index() {
                 <span className="font-mono text-[10px] tracking-widest text-muted-foreground">CONFIG</span>
                 <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => copyText(selectedSecurity.config, "Config")}><Clipboard /> Copy</Button>
               </div>
-              <pre className="max-h-64 overflow-auto p-3 font-mono text-xs leading-5"><code>{selectedSecurity.config.split("\n").map((line, i) => <span key={i} className={`block ${line.startsWith("#") ? "text-muted-foreground" : line.startsWith("$") ? "text-positive" : "text-foreground"}`}>{line || " "}</span>)}</code></pre>
+              <pre className="thin-scrollbar max-h-64 overflow-auto p-3 font-mono text-xs leading-5"><code>{selectedSecurity.config.split("\n").map((line, i) => <span key={i} className={`block ${line.startsWith("#") ? "text-muted-foreground" : line.startsWith("$") ? "text-positive" : "text-foreground"}`}>{line || " "}</span>)}</code></pre>
             </div>
           )}
         </DialogContent>
       </Dialog>
     </div>
   );
+}
+
+function useRevealOnScroll() {
+  useEffect(() => {
+    const targets = document.querySelectorAll<HTMLElement>("[data-reveal]");
+    if (!("IntersectionObserver" in window)) {
+      targets.forEach((target) => target.classList.add("is-visible"));
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
+    );
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, []);
 }
 
 function SettingRow({ icon, label, checked, onCheckedChange }: { icon: ReactNode; label: string; checked: boolean; onCheckedChange: (checked: boolean) => void }) {
@@ -337,16 +407,32 @@ function SystemSummary() {
     { label: "Uptime", value: details.uptime },
   ];
   const logo = ["   ▄▄████▄▄   ", " ▄██▀▀▀▀▀▀██▄ ", "███  ▄▄▄▄  ███", "███  ████  ███", " ▀██▄▄▄▄▄▄██▀ ", "   ▀▀████▀▀   "];
+  const trackPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch") return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = (event.clientX - bounds.left) / bounds.width;
+    const y = (event.clientY - bounds.top) / bounds.height;
+    event.currentTarget.style.setProperty("--tilt-x", `${(0.5 - y) * 12}deg`);
+    event.currentTarget.style.setProperty("--tilt-y", `${(x - 0.5) * 12}deg`);
+    event.currentTarget.style.setProperty("--pointer-x", `${x * 100}%`);
+    event.currentTarget.style.setProperty("--pointer-y", `${y * 100}%`);
+  };
+  const resetPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.currentTarget.style.setProperty("--tilt-x", "0deg");
+    event.currentTarget.style.setProperty("--tilt-y", "0deg");
+    event.currentTarget.style.setProperty("--pointer-x", "50%");
+    event.currentTarget.style.setProperty("--pointer-y", "50%");
+  };
   return <div className="reveal relative [perspective:1200px]">
     <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-sunset-gradient opacity-25 blur-3xl" />
-    <div className="glass gradient-border relative overflow-hidden rounded-[20px] transition-transform duration-700 lg:[transform:rotateY(-8deg)_rotateX(4deg)] lg:hover:[transform:none]">
+    <div onPointerMove={trackPointer} onPointerLeave={resetPointer} className="system-tilt-card glass gradient-border relative overflow-hidden rounded-[20px]">
       <div className="flex items-center justify-between border-b border-border bg-window-header px-4 py-3">
         <div className="flex gap-1.5" aria-hidden="true"><span className="size-3 rounded-full bg-magenta" /><span className="size-3 rounded-full bg-sunset" /><span className="size-3 rounded-full bg-positive" /></div>
         <span className="font-mono text-xs text-muted-foreground">~ fastfetch</span>
         <span className="w-12" />
       </div>
       <div className="grid gap-5 p-5 font-mono text-xs sm:grid-cols-[auto_1fr] sm:p-6 sm:text-sm">
-        <pre className="text-sunset-gradient hidden leading-tight sm:block" aria-hidden="true">{logo.join("\n")}</pre>
+              <pre className="thin-scrollbar text-sunset-gradient hidden leading-tight sm:block" aria-hidden="true">{logo.join("\n")}</pre>
         <div>
           <p className="font-semibold"><span className="text-magenta">ashish</span>@<span className="text-neon">rhel-workstation</span></p>
           <p className="text-muted-foreground">------------------------</p>
@@ -380,9 +466,13 @@ function ProjectWindow({ project, index, onCopy, onSpot }: { project: Project; i
       </div>
       {showSnippet && <Button variant="ghost" size="sm" className="h-8 rounded-full px-3" onClick={() => onCopy(project.snippet, "CLI snippet")}><Clipboard /> Copy</Button>}
     </div>
-    <div className="mt-4 flex-1">
-      {showSnippet ? <pre className="max-h-48 overflow-auto rounded-2xl border border-border bg-background/60 p-4 font-mono text-xs leading-5"><code>{project.snippet.split("\n").map((line, i) => <span key={i} className={`block ${line.startsWith("#") ? "text-muted-foreground" : "text-positive"}`}>{line || " "}</span>)}</code></pre>
-        : <div className="rounded-2xl border border-border bg-background/30 p-4"><p className="mb-1 font-mono text-[10px] font-semibold tracking-widest text-muted-foreground">ARCHITECTURE</p><p className="text-sm leading-6">{project.architecture}</p><p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">{project.detail}</p></div>}
+    <div className="mt-4 grid min-h-64 flex-1">
+      <div aria-hidden={showSnippet} className={`col-start-1 row-start-1 min-h-64 transition-[opacity,transform] duration-300 ${showSnippet ? "pointer-events-none translate-y-1 opacity-0" : "translate-y-0 opacity-100"}`}>
+        <div className="h-full rounded-2xl border border-border bg-background/30 p-4"><p className="mb-1 font-mono text-[10px] font-semibold tracking-widest text-muted-foreground">ARCHITECTURE</p><p className="text-sm leading-6">{project.architecture}</p><p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">{project.detail}</p></div>
+      </div>
+      <div aria-hidden={!showSnippet} className={`col-start-1 row-start-1 min-h-64 transition-[opacity,transform] duration-300 ${showSnippet ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-1 opacity-0"}`}>
+        <pre className="thin-scrollbar h-full max-h-64 overflow-auto rounded-2xl border border-border bg-background/60 p-4 font-mono text-xs leading-5"><code>{project.snippet.split("\n").map((line, i) => <span key={i} className={`block ${line.startsWith("#") ? "text-muted-foreground" : "text-positive"}`}>{line || " "}</span>)}</code></pre>
+      </div>
     </div>
   </article>;
 }
@@ -391,6 +481,18 @@ function ContactAction({ label, value, icon, onCopy }: { label: string; value: s
   return <Button variant="outline" onClick={() => onCopy(value, label)} className="glass glass-hover h-auto min-h-12 justify-start gap-3 rounded-2xl px-4 text-sm"><span className="text-magenta">{icon}</span><span className="truncate">{value || `Add ${label}`}</span><Clipboard className="ml-auto size-3.5 shrink-0 text-muted-foreground" /></Button>;
 }
 
-function DockButton({ label, href, icon }: { label: string; href: string; icon: ReactNode }) {
-  return <Button asChild variant="ghost" size="icon" className="size-11 rounded-xl transition-transform duration-300 hover:-translate-y-1.5 hover:scale-125 hover:bg-secondary" title={label} aria-label={label}><a href={href}>{icon}</a></Button>;
+function DockButton({ label, href, icon, active = false, onClick }: { label: string; href?: string; icon: ReactNode; active?: boolean; onClick?: () => void }) {
+  const className = "dock-button group relative size-11 rounded-xl transition-transform duration-300 hover:-translate-y-1.5 hover:scale-125 hover:bg-secondary";
+  const contents = <>
+    {icon}
+    <span aria-hidden="true" className="dock-tooltip pointer-events-none absolute bottom-full left-1/2 mb-3 -translate-x-1/2 translate-y-1 rounded-full border border-border bg-popover px-3 py-1.5 font-sans text-[11px] font-medium text-popover-foreground opacity-0 shadow-lg transition-[opacity,transform] duration-200 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">{label}</span>
+    <span aria-hidden="true" className={`dock-active-dot absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-neon transition-[opacity,transform,box-shadow] duration-300 ${active ? "scale-100 opacity-100" : "scale-50 opacity-0"}`} />
+  </>;
+  return href ? (
+    <Button asChild variant="ghost" size="icon" className={className} aria-label={label}>
+      <a href={href} aria-current={active ? "location" : undefined}>{contents}</a>
+    </Button>
+  ) : (
+    <Button variant="ghost" size="icon" className={`${className} bg-sunset-gradient text-primary-foreground hover:bg-sunset-gradient`} aria-label={label} onClick={onClick}>{contents}</Button>
+  );
 }

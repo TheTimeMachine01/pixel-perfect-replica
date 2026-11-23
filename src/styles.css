@@ -205,6 +205,7 @@ html.dark {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  animation: ambient-drift 18s ease-in-out infinite alternate;
   background:
     radial-gradient(40rem 40rem at 8% -5%, var(--glow-a), transparent 65%),
     radial-gradient(36rem 36rem at 100% 100%, var(--glow-b), transparent 65%),
@@ -216,6 +217,76 @@ html.dark {
     opacity: 0.035;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
+}
+
+@keyframes ambient-drift {
+  from { transform: translate3d(-0.3%, 0, 0) scale(1); }
+  to { transform: translate3d(0.3%, -0.6%, 0) scale(1.015); }
+}
+
+.system-tilt-card {
+  transform: perspective(1200px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+.system-tilt-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.65;
+  background: radial-gradient(24rem circle at var(--pointer-x, 50%) var(--pointer-y, 50%), color-mix(in oklab, var(--neon) 12%, transparent), transparent 62%);
+  transition: opacity 300ms ease;
+}
+
+.terminal-drawer {
+  visibility: hidden;
+  transition: opacity 300ms cubic-bezier(0.2, 0.9, 0.3, 1.1), transform 300ms cubic-bezier(0.2, 0.9, 0.3, 1.1), visibility 0s linear 300ms;
+}
+
+.terminal-drawer.is-open {
+  visibility: visible;
+  transition: opacity 300ms cubic-bezier(0.2, 0.9, 0.3, 1.1), transform 300ms cubic-bezier(0.2, 0.9, 0.3, 1.1), visibility 0s;
+}
+
+.terminal-drawer:not(.is-open) { pointer-events: none; }
+
+[data-reveal] .reveal-item,
+[data-reveal].reveal-item {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 600ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-reveal].is-visible .reveal-item,
+[data-reveal].reveal-item.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#security[data-reveal].is-visible .reveal-item:nth-child(2),
+#labs[data-reveal].is-visible .reveal-item:nth-child(2) { transition-delay: 80ms; }
+#security[data-reveal].is-visible .reveal-item:nth-child(3),
+#labs[data-reveal].is-visible .reveal-item:nth-child(3) { transition-delay: 160ms; }
+#security[data-reveal].is-visible .reveal-item:nth-child(4),
+#labs[data-reveal].is-visible .reveal-item:nth-child(4) { transition-delay: 240ms; }
+#labs[data-reveal].is-visible .reveal-item:nth-child(5) { transition-delay: 320ms; }
+
+.dock-button[aria-current="location"] .dock-active-dot {
+  box-shadow: 0 0 10px color-mix(in oklab, var(--neon) 85%, transparent);
+}
+
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 24%, transparent) transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--foreground) 24%, transparent);
 }
 
 @utility glass {
@@ -302,5 +373,8 @@ html.dark {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal, .drawer-up, .glow-dot { animation: none; }
+  .reveal, .drawer-up, .glow-dot, .ambient { animation: none; }
+  .system-tilt-card, .system-tilt-card::after, .terminal-drawer,
+  [data-reveal] .reveal-item, [data-reveal].reveal-item,
+  .dock-tooltip, .dock-active-dot { transition: none; }
 }
